@@ -10,13 +10,20 @@ class Topic(models.Model):
     def __str__(self):
         return self.topic_name
 
+class Location(models.Model):
+
+    location_name = models.CharField(max_length=264)
+    country = models.CharField(max_length=50)
+
+    def __str__(self):
+        return self.location_name
+
 class Plasma(models.Model):
     plasma_user_name = models.CharField(max_length=50) # social media user
     plasma_topic_name = models.ForeignKey(Topic,on_delete=models.CASCADE)
     plasma_social_media_content = models.CharField(max_length=1024) # content of data
     plasma_request_date = models.DateField() #date created
     plasma_user_location = models.CharField(max_length=50,default=' ') # social media user
-
 
     def __str__(self):
         return self.plasma_user_name
