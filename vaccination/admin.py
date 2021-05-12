@@ -1,10 +1,12 @@
 from django.contrib import admin
-from vaccination.models import Plasma,Topic,Oxygen,Bed,Location
+from vaccination.models import Andaman_and_nicobar_islands,States,Districts,Andhra_Pradesh,Arunachal_Pradesh
 
 # Register your models here.
 
-admin.site.register(Plasma)
-admin.site.register(Topic)
-admin.site.register(Oxygen)
-admin.site.register(Bed)
-admin.site.register(Location)
+admin.site.register(States)
+admin.site.register(Districts)
+
+admin.site.register(Andaman_and_nicobar_islands)
+admin.site.register(Andhra_Pradesh)
+admin.site.register(Arunachal_Pradesh)
+

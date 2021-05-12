@@ -4,10 +4,11 @@ import os
 os.environ.setdefault('DJANGO_SETTINGS_MODULE','covidcryindia.settings')
 import django
 django.setup()
-
 import random
 from covidfeed.models import Plasma,Topic,Oxygen,Bed,Location
+from vaccination.models import States,Districts,Arunachal_Pradesh,Andhra_Pradesh,Andaman_and_nicobar_islands
 from faker import Faker
+import pandas as pd
 
 fakegen = Faker()
 
@@ -37,15 +38,60 @@ def populate_data(N=10):
         user_location = add_location()
         
         if str(topic_name)=="Plasma":
-            plasma = Plasma.objects.get_or_create(plasma_topic_name=topic_name,plasma_user_name=user_name,plasma_social_media_content=social_media_content,plasma_request_date=request_date,plasma_user_location=user_location)[0]
+            plasma = Plasma.objects.get_or_create(topic_name=topic_name,user_name=user_name,social_media_content=social_media_content,request_date=request_date,user_location=user_location)[0]
         elif str(topic_name)=="Oxygen":
-            oxygen = Oxygen.objects.get_or_create(oxygen_topic_name=topic_name,oxygen_user_name=user_name,oxygen_social_media_content=social_media_content,oxygen_request_date=request_date,oxygen_user_location=user_location)[0]
+            oxygen = Oxygen.objects.get_or_create(topic_name=topic_name,user_name=user_name,social_media_content=social_media_content,request_date=request_date,user_location=user_location)[0]
         elif str(topic_name)=="Bed":
-            bed = Bed.objects.get_or_create(bed_topic_name=topic_name,bed_user_name=user_name,bed_social_media_content=social_media_content,bed_request_date=request_date,bed_user_location=user_location)[0]
+            bed = Bed.objects.get_or_create(topic_name=topic_name,user_name=user_name,social_media_content=social_media_content,request_date=request_date,user_location=user_location)[0]
         else:
             continue
 
 
+def populate_vaccination_state(df):
+
+    for index, row in df.iterrows():
+        print(row['state_id'], row['state_name'])
+
+        plasma = States.objects.get_or_create(state_id=row['state_id'],state_name=row['state_name'])[0]
+       
+        # get topic for the entry
+
+
+def populate_vaccination_district(df):
+
+    for index, row in df.iterrows():
+        print(row['state_id'], row['district_name'],row['district_id'])
+
+        plasma = Districts.objects.get_or_create(state_id=row['state_id'],district_name=row['district_name'],district_id=row['district_id'])[0]
+       
+        # get topic for the entry
+
+def delete_table_data():
+
+
+    Andhra_Pradesh().objects.all().delete()
+
+
+
 if __name__=='__main__':
+
+
     print ("Populating Script")
-    populate_data(20)
+
+
+
+    populate_data(2000)
+
+
+    #df = pd.read_csv('/code/vaccination/data/states.csv')
+
+    #print (df)
+
+    #populate_vaccination_state(df)
+
+
+    #df = pd.read_csv('/code/vaccination/data/states_district.csv')
+
+    #populate_vaccination_district(df)
+
+    #delete_table_data()

@@ -14,8 +14,7 @@ from pathlib import Path
 
 from celery.schedules import crontab
 
-import covidcryindia.tasks
-import vaccination.tasks
+from vaccination import tasks
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -48,7 +47,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'covidfeed',
-    'vaccination',
+    #'vaccination',
+    'vaccination.apps.VaccinationConfig',
 ]
 
 MIDDLEWARE = [
@@ -154,12 +154,8 @@ CELERY_RESULT_BACKEND = "redis://redis:6379"
 
 
 CELERY_BEAT_SCHEDULE = {
-    "sample_task": {
-        "task": "covidcryindia.tasks.sample_task",
-        "schedule": crontab(minute="*/1"),
-    },   
     "vaccination_task": {
         "task": "vaccination.tasks.download_task",
-        "schedule": crontab(minute="*/1"),
+        "schedule": crontab(minute="*/30"),
     },
 }

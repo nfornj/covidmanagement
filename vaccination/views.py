@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from django.http import HttpResponse
-from vaccination.models import Topic,Plasma,Oxygen,Bed,Location
+from covidfeed.models import Topic,Plasma,Oxygen,Bed,Location
 from datetime import datetime, timedelta
 from django.db.models import Q
 # Create your views here.
