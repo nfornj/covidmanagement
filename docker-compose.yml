@@ -20,7 +20,11 @@ services:
       - db
       - redis
   redis:
+    restart: always
     image: redis:alpine
+    expose:
+      - "6379"
+
   
   celery:
     build: .

@@ -16,6 +16,7 @@ from celery.schedules import crontab
 
 from vaccination import tasks
 
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 TEMPLATES_DIR = BASE_DIR.joinpath('templates')
@@ -154,8 +155,18 @@ CELERY_RESULT_BACKEND = "redis://redis:6379"
 
 
 CELERY_BEAT_SCHEDULE = {
-    "vaccination_task": {
+    "url_task": {
         "task": "vaccination.tasks.download_task",
-        "schedule": crontab(minute="*/30"),
+        "schedule": crontab(minute="*/2*"),
+    },
+    "district_task": {
+        "task": "vaccination.tasks.upload_task",
+        "schedule": crontab(minute="*/2"),
     },
 }
+
+# REDIS CONFIGURATION
+
+REDIS_HOST = 'redis'
+REDIS_PORT = 6379
+
