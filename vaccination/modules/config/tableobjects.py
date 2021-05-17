@@ -1,6 +1,6 @@
 
 
-def tableobject(statename):
+def stateobject(statename):
 
     from vaccination.models import Andaman_and_nicobar_islands,States,Districts,Andhra_Pradesh,Arunachal_Pradesh
     
@@ -21,5 +21,15 @@ def tableobject(statename):
         arunachal_Pradesh=Arunachal_Pradesh()
 
         return arunachal_Pradesh
+
+
+def districtobject():
+    from vaccination.models import Districts
+
+    districts = Districts()
+
+    return districts
+
+
 
                         

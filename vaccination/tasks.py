@@ -2,7 +2,7 @@ from celery import shared_task
 import requests
 import json
 import time
-import datetime
+from datetime import datetime
 #from celery import vaccination
 from django.apps import apps
 from vaccination.modules.utils.sendemail import sendemail
@@ -12,7 +12,7 @@ from cffi.backend_ctypes import xrange
 from asgiref.sync import sync_to_async
 import redis
 
-from .modules.config.tableobjects import tableobject
+from .modules.config.tableobjects import stateobject,districtobject
 
 
 def populate_vaccination_state(df):
@@ -33,6 +33,12 @@ def iterate_json(result,states_object):
     #arunachal_Pradesh=iterate_json(result,arunachal_Pradesh)
 
     states_object.save()
+
+
+@sync_to_async
+def get_district_id(Districts,district_name):
+
+    return list(Districts.objects.filter(district_name=district_name).values_list('district_id'))
                     
 
 async def fetch(session, url):
@@ -72,17 +78,18 @@ async def fetch_concurrent(urls,y,district_id):
                     result = {}
                     result["name"]=key["name"]
                     result["district_name"]=key['district_name']
-                    print (key['district_name'])
-                    district=list(Districts.objects.filter(district_name=key['district_name'].values_list('district_id')))
+                    district=await get_district_id(Districts,key['district_name'])
 
                     for id in district:
-                        if district_id==id:
-                            result["district_id"]=id
+                        district_id=district_id
+                        if str(id[0]) in list(district_id):
+                            result["district_id"]=id[0]
                         else:
+                            print ("Not valid")
                             result["district_id"]=9999999
 
                     result["available_capacity"]=session["available_capacity"]
-                    result["vaccine_date"]=datetime.datetime.strptime(session["date"], "%d-%m-%Y").strftime("%Y-%m-%d")
+                    result["vaccine_date"]=datetime.strptime(session["date"], "%d-%m-%Y").strftime("%Y-%m-%d")
                     result["vaccine"]=session["vaccine"]
                     result["status"]="New"
 
@@ -98,7 +105,7 @@ async def fetch_concurrent(urls,y,district_id):
 
 
 
-                    #await iterate_json(result,tableobject(statename))
+                    #await iterate_json(result,stateobject(statename))
 
         #result_data='\n'.join(map(str, result_data))
 
@@ -113,6 +120,8 @@ async def fetch_concurrent(urls,y,district_id):
 def download_task():
 
     from .models import States,Districts
+
+    request_date = datetime.today().strftime('%d-%m-%y')
 
     headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36'}
     
@@ -132,7 +141,7 @@ def download_task():
                 id=new_message['data']
                 d_id = []
         
-                d_id.append("https://cdn-api.co-vin.in/api/v2/appointment/sessions/public/calendarByDistrict?district_id="+str(id)+"&date=12-05-2021")
+                d_id.append("https://cdn-api.co-vin.in/api/v2/appointment/sessions/public/calendarByDistrict?district_id="+str(id)+"&date="+request_date)
                 d_id.append(id)
                 
                 urls.append(d_id)
@@ -141,10 +150,12 @@ def download_task():
                 if count==20:
                     batchsize = 20
                     y=0
+                    d_list=[d[1] for d in urls]
+                    d_list.pop(0)
                     for i in xrange(0, len(urls), batchsize):
                         batch = urls[i:i+batchsize]
                         #print (batch)
-                        asyncio.run(fetch_concurrent(batch,y,d_id[1]))
+                        asyncio.run(fetch_concurrent(batch,y,d_list))
                         y = y + 1
                     count=0
                     time.sleep(60)
@@ -168,6 +179,19 @@ def upload_task():
 
             for district_id in district_ids:
                 URL.publish('URL', str(district_id[0]))
+
+
+
+
+@shared_task
+def delete_records():
+
+    from .models import States,Districts,Andaman_and_nicobar_islands,Arunachal_Pradesh,Andhra_Pradesh
+
+
+    print ("hello")
+
+
 
 
 
