@@ -2,7 +2,7 @@ from celery import shared_task
 import requests
 import json
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 #from celery import vaccination
 from django.apps import apps
 from vaccination.modules.utils.sendemail import sendemail
@@ -11,6 +11,8 @@ import aiohttp
 from cffi.backend_ctypes import xrange
 from asgiref.sync import sync_to_async
 import redis
+import pandas as pd
+pd.set_option('display.max_columns', 500)
 
 from .modules.config.tableobjects import stateobject,districtobject
 
@@ -51,6 +53,10 @@ async def fetch_concurrent(urls,y,district_id):
 
     from .models import Andaman_and_nicobar_islands,States,Districts,Andhra_Pradesh,Arunachal_Pradesh
 
+    df_hospital_list = pd.DataFrame(
+        columns=['state_name', 'district_name', 'district_id', 'name', 'vaccine',
+                 'date', 'available_capacity'])
+
     print (district_id)
 
     loop = asyncio.get_event_loop()
@@ -70,42 +76,55 @@ async def fetch_concurrent(urls,y,district_id):
             #Do whatever you want with results
 
             centers = json.loads(centers)
-            result_data=[]
+
+            
 
             for key in centers["centers"]:
+                result_data=[]
                 #print (key)
                 for session in key["sessions"]:
-                    result = {}
-                    result["name"]=key["name"]
-                    result["district_name"]=key['district_name']
+         
                     district=await get_district_id(Districts,key['district_name'])
 
                     for id in district:
                         district_id=district_id
                         if str(id[0]) in list(district_id):
-                            result["district_id"]=id[0]
+                            dis_id=id[0]
                         else:
                             print ("Not valid")
-                            result["district_id"]=9999999
+                            dis_id=9999999
 
-                    result["available_capacity"]=session["available_capacity"]
-                    result["vaccine_date"]=datetime.strptime(session["date"], "%d-%m-%Y").strftime("%Y-%m-%d")
-                    result["vaccine"]=session["vaccine"]
-                    result["status"]="New"
+                    df_hospital_list = df_hospital_list.append({
+                                                        'state_name': key['state_name'],
+                                                        'district_name': key["district_name"],
+                                                        'district_id':dis_id,
+                                                        'name' : key["name"],
+                                                        'vaccine' : session["vaccine"],
+                                                        'date' : session["date"],
+                                                        'available_capacity' : session["available_capacity"],
+                                                        'status' : 'New'
+                                                       },ignore_index=True)
 
-                    #print(json.dumps(result))
+                df_hospital_list = df_hospital_list.groupby(['name','district_name'],as_index=False).agg(
+                    {
+                       
+                        'available_capacity':'sum',
+                        'district_id': 'first',
+                        'vaccine':'first',
+                        'state_name':'first',
+                        'date':'first',
+                        'status' : 'first'
+                        
+                        })
 
-                    result_data.append(json.dumps(result))
+                response = redis.Redis(host='redis', port=6379, db=0)
 
-                    #print (result)
+                for x in df_hospital_list.to_json(orient='records', lines=True).split('\n'):
 
-                    response = redis.Redis(host='redis', port=6379, db=0)
+                    if x != '':
+                        response.publish('response', str(x))
 
-                    response.publish('response', str(result))
-
-
-
-                    #await iterate_json(result,stateobject(statename))
+                #await iterate_json(result,stateobject(statename))
 
         #result_data='\n'.join(map(str, result_data))
 
@@ -170,8 +189,6 @@ def upload_task():
     ## IMPLEMENT QUEUE HERE
     for e in States.objects.all():
 
-        if e.state_id == 2 or e.state_id == 1 or e.state_id == 3:
-
             state_name=e.state_name
             district_ids = list(Districts.objects.filter(state_id=e.state_id).values_list('district_id'))
 
@@ -182,14 +199,16 @@ def upload_task():
 
 
 
-
 @shared_task
 def delete_records():
 
     from .models import States,Districts,Andaman_and_nicobar_islands,Arunachal_Pradesh,Andhra_Pradesh
 
+    Andaman_and_nicobar_islands.objects.filter(vaccine_date__lte=datetime.now() - timedelta(days=1)).delete()
 
-    print ("hello")
+    return "Hello"
+
+
 
 
 
