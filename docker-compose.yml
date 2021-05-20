@@ -12,6 +12,7 @@ services:
   web:
     build: .
     command: python manage.py runserver 0.0.0.0:8000
+    entrypoint: sh -c "/code/entrypoint.sh"
     volumes:
       - .:/code
     ports:
@@ -25,7 +26,7 @@ services:
     expose:
       - "6379"
 
-  
+
   celery:
     build: .
     command: celery -A covidcryindia worker -l info
