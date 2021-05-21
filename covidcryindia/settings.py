@@ -12,6 +12,10 @@ https://docs.djangoproject.com/en/3.2/ref/settings/
 
 from pathlib import Path
 
+from celery.schedules import crontab
+
+from vaccination import tasks
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 TEMPLATES_DIR = BASE_DIR.joinpath('templates')
@@ -43,6 +47,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'covidfeed',
+    #'vaccination',
+    'vaccination.apps.VaccinationConfig',
 ]
 
 MIDDLEWARE = [
@@ -139,3 +145,17 @@ STATICFILES_DIRS = [
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+# CELERY SETTINGS 
+
+CELERY_BROKER_URL = "redis://redis:6379"
+CELERY_RESULT_BACKEND = "redis://redis:6379"
+
+
+CELERY_BEAT_SCHEDULE = {
+    "vaccination_task": {
+        "task": "vaccination.tasks.download_task",
+        "schedule": crontab(minute="*/30"),
+    },
+}

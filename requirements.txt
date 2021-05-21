@@ -1,3 +1,9 @@
 Django>=3.0,<4.0
 psycopg2-binary>=2.8
 Faker
+celery>=4.4.1
+redis>=3.4.1
+requests>=2.0.0
+pandas
+aiohttp
+cffi
