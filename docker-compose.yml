@@ -25,7 +25,6 @@ services:
     expose:
       - "6379"
 
-  
   celery:
     build: .
     command: celery -A covidcryindia worker -l info
