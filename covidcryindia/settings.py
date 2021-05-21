@@ -157,11 +157,19 @@ CELERY_RESULT_BACKEND = "redis://redis:6379"
 CELERY_BEAT_SCHEDULE = {
     "url_task": {
         "task": "vaccination.tasks.download_task",
-        "schedule": crontab(minute="*/30*"),
+        "schedule": crontab(minute="*/40*"),
     },
-    "district_task": {
+    "upload_task": {
         "task": "vaccination.tasks.upload_task",
+        "schedule": crontab(minute="*/40"),
+    },
+    "delete_task": {
+        "task": "vaccination.tasks.delete_task",
         "schedule": crontab(minute="*/60"),
+    },
+    "duplicate_removal_task": {
+        "task": "vaccination.tasks.remove_duplicated_records",
+        "schedule": crontab(minute="*/5"),
     },
 }
 
@@ -169,4 +177,7 @@ CELERY_BEAT_SCHEDULE = {
 
 REDIS_HOST = 'redis'
 REDIS_PORT = 6379
+
+
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 500000
 
