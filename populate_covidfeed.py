@@ -80,18 +80,18 @@ if __name__=='__main__':
 
 
 
-    #populate_data(2000)
+    populate_data(2000)
 
 
-    df = pd.read_csv('/code/vaccination/data/states.csv')
+    #df = pd.read_csv('/code/vaccination/data/states.csv')
 
-    print (df)
+    #print (df)
 
-    populate_vaccination_state(df)
+    #populate_vaccination_state(df)
 
 
-    df = pd.read_csv('/code/vaccination/data/states_district.csv')
+    #df = pd.read_csv('/code/vaccination/data/states_district.csv')
 
-    populate_vaccination_district(df)
+    #populate_vaccination_district(df)
 
     #delete_table_data()

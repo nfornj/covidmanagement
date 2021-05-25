@@ -3,87 +3,90 @@ from django.http import HttpResponse
 from covidfeed.models import Topic,Plasma,Oxygen,Bed,Location
 from datetime import datetime, timedelta
 from django.db.models import Q
+from .modules.config.tableobjects import stateobject
+from .models import States,Districts
+from django.db.models import Sum,Min
+import json
+
 # Create your views here.
 
 d = datetime.today() - timedelta(days=1200)
 
 d= d.date()
 
+
 def index(request):
 
-    oxygen = Oxygen.objects.filter(Q(request_date__gte=d)).reverse()
+    districts = Districts.objects.all()
 
-    bed = Bed.objects.filter(Q(request_date__gte=d)).reverse()
-
-    plasma = Plasma.objects.filter(Q(request_date__gte=d)).reverse()
-
-    all_data=plasma.union(oxygen,bed)
-
-    data = {
-
-    "all_data": all_data.order_by('request_date'),
-    "oxygen_count": oxygen.count(),
-    "plasma_count": plasma.count(),
-    "bed_count": bed.count()
-
-    }
-
-    return render(request, 'vaccination/index.html',context=data)
-
-def plasma(request):
-
-    oxygen = Oxygen.objects.filter(Q(request_date__gte=d)).reverse()
-
-    bed = Bed.objects.filter(Q(request_date__gte=d)).reverse()
-
-    plasma = Plasma.objects.filter(Q(request_date__gte=d)).reverse()
+    return render(request,'vaccination/posts.html',context={"district_list":districts})
 
 
-    data = {
+def all_data(request):
 
-    "all_data": plasma.order_by('request_date'),
-    "oxygen_count": oxygen.count(),
-    "plasma_count": plasma.count(),
-    "bed_count": bed.count()
+    state_list=[]
 
-    }
+    state_count={}
 
-    return render(request, 'vaccination/posts.html',context=data)
 
-def oxygen(request):
+    districts = Districts.objects.all()
 
-    oxygen = Oxygen.objects.filter(Q(request_date__gte=d)).reverse()
+    for e in States.objects.all():
 
-    bed = Bed.objects.filter(Q(request_date__gte=d)).reverse()
 
-    plasma = Plasma.objects.filter(Q(request_date__gte=d)).reverse()
+
+        state_availability = stateobject(e.state_name).objects.aggregate(Sum('available_capacity'))
+        earliest = stateobject(e.state_name).objects.values('vaccine_date').annotate(min=Min('vaccine_date')).first()
+
+        
+        
+        if earliest is not None:
+
+            state_count['state_id']=e.state_id
+            state_count['state_name']=e.state_name
+            state_count['available_capacity']=state_availability['available_capacity__sum']
+            state_count['available_date']=earliest['min'].strftime('%Y-%m-%d')
+            
+
+        else:
+             state_count['state_id']=e.state_id
+             state_count['state_name']=e.state_name
+             state_count['available_capacity']=state_availability['available_capacity__sum']
+             state_count['available_date']="No Data"
+            
+        state_list.append(json.loads(json.dumps(state_count)))
 
     data = {
 
-    "all_data": oxygen.order_by('request_date'),
-    "oxygen_count": oxygen.count(),
-    "plasma_count": plasma.count(),
-    "bed_count": bed.count()
+        "total_state_availability": state_list,
+        "district_list":districts
 
     }
 
     return render(request, 'vaccination/posts.html',context=data)
 
-def bed(request):
 
-    oxygen = Oxygen.objects.filter(Q(request_date__gte=d)).reverse()
 
-    bed = Bed.objects.filter(Q(request_date__gte=d)).reverse()
+def districtdata(request):
 
-    plasma = Plasma.objects.filter(Q(request_date__gte=d)).reverse()
+    districts = Districts.objects.all()
 
-    data = {
+    district_id=request.GET.get('district_id')
 
-    "all_data": bed.order_by('request_date'),
-    "oxygen_count": oxygen.count(),
-    "plasma_count": plasma.count(),
-    "bed_count": bed.count()
+    district_name = Districts.objects.get(district_id=district_id)
+    state_name = States.objects.get(state_id=district_name.state_id)
 
-    }
+    data= stateobject(state_name.state_name).objects.filter(district_id=district_id).values('district_name','name','vaccine_date','available_capacity','vaccine')
 
-    return render(request, 'vaccination/posts.html',context=data)
+    print(data)
+
+    return render(request,'vaccination/posts.html',context={
+        
+        "hospital_list":data,
+        "state_name" : state_name.state_name,
+        "district_list":districts
+    
+    })
+
+
+

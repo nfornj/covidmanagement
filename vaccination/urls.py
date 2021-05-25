@@ -1,12 +1,13 @@
 from django.conf.urls import url
+from django.urls import path
 from vaccination import views
 
 
 urlpatterns=[
 
-    url(r'^$',views.index,name='vaccination'),
-    url(r'^plasma$',views.plasma,name='vaccineState'),
-    url(r'^oxygen$',views.oxygen,name='vaccinacountry'),
-    url(r'^bed$',views.bed,name='vaccinedistrict'),
+    path('',views.all_data,name='vaccination'),
+    path('', views.index,name='vaccination'),
+
+    url(r'^district$',views.districtdata),
 
 ]

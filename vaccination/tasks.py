@@ -16,7 +16,7 @@ import redis
 import pandas as pd
 pd.set_option('display.max_columns', 500)
 
-from .modules.config.tableobjects import stateobject
+from .modules.config.tableobjects import stateinstance
 
 
 def populate_vaccination_state(df):
@@ -32,11 +32,8 @@ def populate_vaccination_state(df):
 @sync_to_async
 def iterate_json(result,states_object):
 
-    print (result)
-
     for k, v in result.items():
         setattr(states_object, k, v)
-    #arunachal_Pradesh=iterate_json(result,arunachal_Pradesh)
 
     states_object.save()
 
@@ -53,7 +50,7 @@ async def fetch(session, url):
         # Catch HTTP errors/exceptions here
 
 
-async def fetch_concurrent(urls,y,district_id):
+async def fetch_concurrent(urls,y,district_id,task_id):
 
     from .models import Andaman_and_nicobar_islands,States,Districts,Andhra_Pradesh,Arunachal_Pradesh
 
@@ -139,20 +136,30 @@ async def fetch_concurrent(urls,y,district_id):
                         
                                 response.publish('response', str(x))
                         
-                                await iterate_json(y,stateobject(y['state_name']))
+                                await iterate_json(y,stateinstance(y['state_name']))
 
                         del df_hospital_list
             
             except Exception as e:
                 print (e)
-                pass
+                from vaccination.tasks import download_task
+                from covidcryindia.celery import app
+                print ("Error Found Exiting Task....")
+                try:
+                    app.control.revoke(task_id,terminate=True, signal='SIGKILL')
+                except SystemExit as e:
+                    print (e)
 
-
-
+  
+            
 @shared_task
 def download_task():
 
     from .models import States,Districts
+
+    from celery import current_task
+
+    task_id=current_task.request.id
 
     request_date = datetime.today().strftime('%d-%m-%y')
     celery= redis.StrictRedis('redis', 6379, charset="utf-8", decode_responses=True)
@@ -186,7 +193,8 @@ def download_task():
             for i in xrange(0, len(urls), batchsize):
                 batch = urls[i:i+batchsize]
                 print (batch)
-                asyncio.run(fetch_concurrent(batch,y,d_list))
+                batch.pop(0)
+                asyncio.run(fetch_concurrent(batch,y,d_list,task_id))
                 time.sleep(60)
                 y = y + 1
                 count=0
@@ -422,6 +430,30 @@ def remove_duplicated_records():
     removeDuplicates(Uttar_pradesh)
     removeDuplicates(Uttarakhand)
     removeDuplicates(West_bengal)
+
+
+@shared_task
+def checkfordownloadtask():
+
+    from covidcryindia import celery_app
+    from vaccination.tasks import download_task,upload_task
+
+    print (str(download_task.request.id))
+
+    if  download_task.request.id is None:
+        print ("KERI")
+        download_task.delay()
+        time.sleep(10)
+        upload_task.delay()
+
+    else:
+        print ("KERILA")
+        pass
+
+
+
+
+
 
 
 
