@@ -55,11 +55,10 @@ async def fetch_concurrent(urls,y,district_id,task_id):
     from .models import Andaman_and_nicobar_islands,States,Districts,Andhra_Pradesh,Arunachal_Pradesh
 
 
+
     df_hospital_list = pd.DataFrame(
         columns=['state_name', 'district_name', 'district_id', 'name', 'vaccine',
-                 'vaccine_date', 'available_capacity'])
-
-
+                 'vaccine_date', 'available_capacity','available_capacity_dose1','available_capacity_dose2','min_age_limit'])
 
     print (district_id)
 
@@ -70,6 +69,8 @@ async def fetch_concurrent(urls,y,district_id,task_id):
         
         for u in urls:
             tasks.append(loop.create_task(fetch(session, u[0]),name=str(u[1])))
+
+       
 
         for result in asyncio.as_completed(tasks):
 
@@ -82,16 +83,25 @@ async def fetch_concurrent(urls,y,district_id,task_id):
             try:
 
                 centers = json.loads(centers)
-            
+
+                
+                df_hospital_list_telegram = pd.DataFrame(
+                        columns=['state_name', 'district_name', 'district_id', 'name', 'vaccine',
+                        'vaccine_date', 'available_capacity','available_capacity_dose1','available_capacity_dose2','min_age_limit','status'])
+
+        
                 for key in centers["centers"]:
 
+                    #print (key)
+
+                    
                     for session in key["sessions"]:
 
                         df_hospital_list = pd.DataFrame(
                             columns=['state_name', 'district_name', 'district_id', 'name', 'vaccine',
                             'vaccine_date', 'available_capacity'])
 
-
+                        
                         dis_id=9999999
          
                         district=await get_district_id(Districts,key['district_name'])
@@ -107,15 +117,36 @@ async def fetch_concurrent(urls,y,district_id,task_id):
                                                         'vaccine' : session["vaccine"],
                                                         'vaccine_date' : datetime.strptime(str(session["date"]),"%d-%m-%Y").strftime('%Y-%m-%d'),
                                                         'available_capacity' : session["available_capacity"],
+                                                        'available_capacity_dose1' : session["available_capacity_dose1"],
+                                                        'available_capacity_dose2' : session["available_capacity_dose2"],
+                                                        'min_age_limit' : session['min_age_limit'],
                                                         'status' : 'New'
                                                        },ignore_index=True)
+
+                                
+
+                                if (session["available_capacity"]>1):
+
+                                    df_hospital_list_telegram = df_hospital_list_telegram.append(df_hospital_list)
+                
+                                    #r= requests.post("https://api.telegram.org/bot1813237434:AAF3-HAA9Rhklz0v2T73p6-GhUxQuNfoBWU/sendMessage?chat_id=@india_vaccine_availability&text=District : "+key['district_name'].strip()+" \
+                                     #   \nHospital Name : "+key['name']+" \
+                                     #   \nTotal Availability : "+str(session['available_capacity'])+" \
+                                     #   \nDose1 : "+str(session["available_capacity_dose1"])+"  Dose2 : "+str(session["available_capacity_dose2"])+" \
+                                     #   \nAge Limit : "+str(session['min_age_limit'])+"&parse_mode=html")
+                                    #print ("Telegram")
+                                    #print ("Telegram Response:"+str(r.text))
+                                                    
                             else:
                                 print ("Not valid : "+str(id[0]))
                                 print ("ID LIST : "+str(district_id))
                                 continue
 
-                
+                    
                     if not df_hospital_list.empty:
+
+    
+                        
                         df_hospital_list = df_hospital_list.groupby(['name','district_name','district_id'],as_index=False).agg({
                        
                             'available_capacity':'sum',
@@ -139,6 +170,88 @@ async def fetch_concurrent(urls,y,district_id,task_id):
                                 await iterate_json(y,stateinstance(y['state_name']))
 
                         del df_hospital_list
+
+
+                if not  df_hospital_list_telegram.empty:
+
+
+                    print (df_hospital_list_telegram.count())
+
+                    df_hospital_list_telegram_18 = df_hospital_list_telegram.query('min_age_limit < 40')
+
+                    df_hospital_list_telegram_45 = df_hospital_list_telegram.query('min_age_limit >= 45')
+
+
+            
+
+                    """df_hospital_list_telegram_18 = df_hospital_list_telegram_18.groupby(['name','district_name','district_id','vaccine','vaccine_date'],as_index=False).agg({
+                       
+                            'available_capacity':'sum',
+                            'state_name':'first',
+                            'status' : 'first',
+                            'min_age_limit' : 'first',
+                            'available_capacity_dose1' : 'first',
+                            'available_capacity_dose2' : 'first'
+
+                            })
+
+                    df_hospital_list_telegram_45 = df_hospital_list_telegram_45.groupby(['name','district_name','district_id','vaccine','vaccine_date'],as_index=False).agg({
+                       
+                            'available_capacity':'sum',
+                            'state_name':'first',
+                            'status' : 'first',
+                            'min_age_limit' : 'first',
+                            'available_capacity_dose1' : 'first',
+                            'available_capacity_dose2' : 'first'
+
+                            })"""
+
+
+                    print (df_hospital_list_telegram_18.count())
+
+
+                    if not df_hospital_list_telegram_45.empty:
+
+                        content="<b>District : </b>"+df_hospital_list_telegram_45['district_name'].iloc[0]+"\t\t\t<b>Age Limit : 45</b>\n"
+                        for index, row in df_hospital_list_telegram_45.iterrows():
+                            print (row['name'])
+                            content=content+"\n<b>Vaccine Date : </b>"+row['vaccine_date']+"\t\t\t<b>Vaccine : </b>"+row['vaccine']+"\n<b>Hospital Name : </b>"+row['name']+"\n<b>Availability : </b>"+str(row['available_capacity'])+"\t\t\t<b>Dose1 : </b>"+str(int(row['available_capacity_dose1']))+"\t<b>Dose2 : </b>"+str(int(row['available_capacity_dose2'])) + "\n"
+                            content = content + "_________________________________________________________________\n"
+                            if len(content)>=3800:
+                                r= requests.post("https://api.telegram.org/bot1813237434:AAF3-HAA9Rhklz0v2T73p6-GhUxQuNfoBWU/sendMessage?chat_id=@india_vaccine_availability&text="+content+"&parse_mode=html")
+                                print (r.text)
+                                content=""
+                                content="<b>District : </b>"+df_hospital_list_telegram_45['district_name'].iloc[0]+"\t\t\t<b>Age Limit : 45</b>\n"
+                                content = content + "Book: https://selfregistration.cowin.gov.in \n"
+                        print (content)
+                        content = content + "Book: https://selfregistration.cowin.gov.in \n"
+                        r= requests.post("https://api.telegram.org/bot1813237434:AAF3-HAA9Rhklz0v2T73p6-GhUxQuNfoBWU/sendMessage?chat_id=@india_vaccine_availability&text="+content+"&parse_mode=html")
+                        print (r.text)
+                    
+                    if not df_hospital_list_telegram_18.empty:
+                        content="<b>District : </b>"+df_hospital_list_telegram_45['district_name'].iloc[0]+"\t\t\tAge Limit : 18+\n"
+                        for index, row in df_hospital_list_telegram_18.iterrows(): 
+                            print (row['name'])  
+                            content=content+"\n<b>Vaccine Date : </b>"+row['vaccine_date']+"\t\t\t<b>Vaccine : </b>"+row['vaccine']+"\nHospital Name"+row['name']+"\n<b>Availability : </b>"+str(row['available_capacity'])+"\t\t\tDose1 : "+str(int(row['available_capacity_dose1']))+"\tDose2 : "+str(int(row['available_capacity_dose2'])) + "\n"
+                            content = content + "_________________________________________________________________\n"
+                            if len(content)>=3800:
+                                r= requests.post("https://api.telegram.org/bot1813237434:AAF3-HAA9Rhklz0v2T73p6-GhUxQuNfoBWU/sendMessage?chat_id=@india_vaccine_availability&text="+content+"&parse_mode=html")
+                                print (r.text)
+                                content=""
+                                content="<b>District : </b>"+df_hospital_list_telegram_45['district_name'].iloc[0]+"\t\t\t<b>Age Limit : 18+</b>\n"
+                                content = content + "Book: https://selfregistration.cowin.gov.in \n"
+                        
+                        content = content + "Book: https://selfregistration.cowin.gov.in \n"
+                        print (content)
+                        r= requests.post("https://api.telegram.org/bot1813237434:AAF3-HAA9Rhklz0v2T73p6-GhUxQuNfoBWU/sendMessage?chat_id=@india_vaccine_availability&text="+content+"&parse_mode=html")
+                        print (r.text)
+
+
+
+
+
+    
+
             
             except Exception as e:
                 print (e)
@@ -150,6 +263,9 @@ async def fetch_concurrent(urls,y,district_id,task_id):
                 except SystemExit as e:
                     print (e)
 
+        #del df_hospital_list_telegram
+
+
   
             
 @shared_task
@@ -160,6 +276,12 @@ def download_task():
     from celery import current_task
 
     task_id=current_task.request.id
+
+    print ("TASK_ID = "+str(task_id))
+
+    celery= redis.StrictRedis('redis', 6379, charset="utf-8", decode_responses=True)
+
+    celery.set("task_id",task_id)
 
     request_date = datetime.today().strftime('%d-%m-%y')
     celery= redis.StrictRedis('redis', 6379, charset="utf-8", decode_responses=True)
@@ -177,8 +299,6 @@ def download_task():
     for new_message in p.listen():
         id=new_message['data']
 
-        print ("District ID : "+str(id))
-
         d_id = []
 
         d_id.append("https://cdn-api.co-vin.in/api/v2/appointment/sessions/public/calendarByDistrict?district_id="+str(id)+"&date="+request_date)
@@ -192,7 +312,7 @@ def download_task():
             y=0
             for i in xrange(0, len(urls), batchsize):
                 batch = urls[i:i+batchsize]
-                print (batch)
+                #print (batch)
                 batch.pop(0)
                 asyncio.run(fetch_concurrent(batch,y,d_list,task_id))
                 time.sleep(60)
@@ -212,14 +332,10 @@ def upload_task():
     ## IMPLEMENT QUEUE HERE
     for e in States.objects.all():
 
-        print ("UPLOADING STATE: "+str(e.state_name))
-
-
-        if e.state_id>=1:
+        if e.state_id==17:
+            print ("UPLOADING STATE: "+str(e.state_name))
             state_name=e.state_name
             district_ids = list(Districts.objects.filter(state_id=e.state_id).values_list('district_id'))
-
-            print (district_ids)
 
             URL = redis.Redis(host='redis', port=6379, db=0)
 
@@ -438,18 +554,51 @@ def checkfordownloadtask():
     from covidcryindia import celery_app
     from vaccination.tasks import download_task,upload_task
 
-    print (str(download_task.request.id))
+    response = redis.Redis(host='redis', port=6379,charset="utf-8", decode_responses=True)
 
-    if  download_task.request.id is None:
-        print ("KERI")
+    print (download_task.AsyncResult(response.get("task_id")).state)
+   
+    print (response.get("task_id"))
+    
+
+    if  download_task.AsyncResult(response.get("task_id")).state == 'REVOKED':
+        print ("REVOKED Executing Download Task Again")
         download_task.delay()
         time.sleep(10)
         upload_task.delay()
 
-    else:
+    elif download_task.AsyncResult(response.get("task_id")).state == 'PENDING':
         print ("KERILA")
         pass
+    elif download_task.AsyncResult(response.get("task_id")).state == 'FAILURE':
+        print ("FAILURE : Executing Download Task Again")
+        download_task.delay()
+        time.sleep(10)
+        upload_task.delay()
 
+        pass
+    else:
+        pass
+
+
+@shared_task
+def vaccination_check_task():
+
+    from .models import States
+
+    from .modules.config.tableobjects import stateobject
+
+    for e in States.objects.all():
+        districts = stateobject(e.state_name).objects.values('district_name','district_id','available_capacity','vaccine_date','name','vaccine')
+
+        for district in districts:
+            if (district['available_capacity'])>0 and ((district['district_name'])=='Ernakulam' or (district['district_name'])=='Kozhikode'):
+
+                print ("Available")
+
+                #r= requests.post("https://api.telegram.org/bot1813237434:AAF3-HAA9Rhklz0v2T73p6-GhUxQuNfoBWU/sendMessage?chat_id=@india_vaccine_availability&text=District : "+district['district_name']+"\nHospital Name : "+district['name']+"\nAvailable Capacity :"+str(district['available_capacity'])+"")
+
+    #print (r)
 
 
 

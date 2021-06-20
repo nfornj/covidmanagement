@@ -8,3 +8,4 @@ pandas
 aiohttp
 cffi
 redis-py-cluster
+python-telegram-bot

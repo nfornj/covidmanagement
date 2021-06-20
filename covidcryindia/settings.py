@@ -157,11 +157,11 @@ CELERY_RESULT_BACKEND = "redis://redis:6379"
 CELERY_BEAT_SCHEDULE = {
     "url_task": {
         "task": "vaccination.tasks.download_task",
-        "schedule": crontab(minute="*/40*"),
+        "schedule": crontab(minute="*/15*"),
     },
     "upload_task": {
         "task": "vaccination.tasks.upload_task",
-        "schedule": crontab(minute="*/360"),
+        "schedule": crontab(minute="*/5"),
     },
     "delete_task": {
         "task": "vaccination.tasks.delete_task",
@@ -173,6 +173,10 @@ CELERY_BEAT_SCHEDULE = {
     },
      "check_for_download_task": {
         "task": "vaccination.tasks.checkfordownloadtask",
+        "schedule": crontab(minute="*/1"),
+    },
+         "check_for_vaccination_task": {
+        "task": "vaccination.tasks.vaccination_check_task",
         "schedule": crontab(minute="*/5"),
     },
 }

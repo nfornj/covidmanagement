@@ -40,6 +40,7 @@ from vaccination.models import Tripura
 from vaccination.models import Uttar_pradesh
 from vaccination.models import Uttarakhand
 from vaccination.models import West_bengal
+from vaccination.models import User_Base
 
 
 
@@ -87,4 +88,9 @@ admin.site.register(Tripura)
 admin.site.register(Uttar_pradesh)
 admin.site.register(Uttarakhand)
 admin.site.register(West_bengal)
+
+
+# USER BASE
+
+admin.site.register(User_Base)
 

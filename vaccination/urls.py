@@ -9,5 +9,6 @@ urlpatterns=[
     path('', views.index,name='vaccination'),
 
     url(r'^district$',views.districtdata),
+    url(r'^state$',views.statedata),
 
 ]

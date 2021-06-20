@@ -538,3 +538,12 @@ class West_bengal(models.Model):
 
     def __str__(self):
         return self.district_name
+
+
+class User_Base(models.Model):
+    email_id= models.EmailField()
+    district_id = models.IntegerField()
+    state_name = models.CharField(max_length=1024)
+
+    def __str__(self):
+        return self.email_id
