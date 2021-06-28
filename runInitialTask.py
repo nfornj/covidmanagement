@@ -8,6 +8,6 @@ from vaccination.tasks import delete_task, download_task,upload_task,remove_dupl
 
 download_task.delay()
 #time.sleep(10)
-upload_task.delay()
+#upload_task.delay()
 #remove_duplicated_records.delay()
 

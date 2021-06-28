@@ -35,7 +35,14 @@ SECRET_KEY = 'django-insecure-3x_$95y$_5^rlj37j!u@t(rla8=11(84#3!l))!%x$1ice@u5&
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+
+
+ALLOWED_HOSTS = [
+
+'covidfreeindia.in',
+'www.covidfreeindia.in',
+
+]
 
 
 # Application definition
@@ -157,11 +164,11 @@ CELERY_RESULT_BACKEND = "redis://redis:6379"
 CELERY_BEAT_SCHEDULE = {
     "url_task": {
         "task": "vaccination.tasks.download_task",
-        "schedule": crontab(minute="*/15*"),
+        "schedule": crontab(minute="*/11*"),
     },
     "upload_task": {
         "task": "vaccination.tasks.upload_task",
-        "schedule": crontab(minute="*/5"),
+        "schedule": crontab(minute="*/10"),
     },
     "delete_task": {
         "task": "vaccination.tasks.delete_task",
@@ -169,16 +176,13 @@ CELERY_BEAT_SCHEDULE = {
     },
     "duplicate_removal_task": {
         "task": "vaccination.tasks.remove_duplicated_records",
-        "schedule": crontab(minute="*/5"),
+        "schedule": crontab(minute="*/500"),
     },
      "check_for_download_task": {
         "task": "vaccination.tasks.checkfordownloadtask",
-        "schedule": crontab(minute="*/1"),
+        "schedule": crontab(minute="*/500"),
     },
-         "check_for_vaccination_task": {
-        "task": "vaccination.tasks.vaccination_check_task",
-        "schedule": crontab(minute="*/5"),
-    },
+         
 }
 
 # REDIS CONFIGURATION
