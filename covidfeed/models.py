@@ -2,55 +2,57 @@ from django.db import models
 
 # Create your models here.
 
-
 class Topic(models.Model):
-
-    topic_name = models.CharField(max_length=264)
-
+    """Model representing a resource topic category."""
+    name = models.CharField(max_length=100)
+    description = models.TextField(blank=True, null=True)
+    
     def __str__(self):
-        return self.topic_name
+        return self.name
 
 class Location(models.Model):
-
-    location_name = models.CharField(max_length=264)
-    country = models.CharField(max_length=50)
-
+    """Model representing a location with country information."""
+    name = models.CharField(max_length=100)
+    country = models.CharField(max_length=50, default='India')
+    state = models.CharField(max_length=50, blank=True, null=True)
+    city = models.CharField(max_length=50, blank=True, null=True)
+    
     def __str__(self):
-        return self.location_name
+        return f"{self.name}, {self.country}"
 
-class Plasma(models.Model):
-    user_name = models.CharField(max_length=50) # social media user
-    topic_name = models.ForeignKey(Topic,on_delete=models.CASCADE)
-    social_media_content = models.CharField(max_length=1024) # content of data
-    request_date = models.DateField() #date created
-    user_location = models.CharField(max_length=50,default=' ') # social media user
-    status = models.CharField(max_length=10,default='New') # status , NEW , OLD , COMPLETE 
-
+class ResourceRequest(models.Model):
+    """
+    Model representing a resource request (Plasma, Oxygen, Bed, etc.)
+    This replaces the separate models for each resource type.
+    """
+    RESOURCE_TYPES = [
+        ('PLASMA', 'Plasma'),
+        ('OXYGEN', 'Oxygen'),
+        ('BED', 'Hospital Bed'),
+        ('MEDICINE', 'Medicine'),
+        ('OTHER', 'Other'),
+    ]
+    
+    STATUS_CHOICES = [
+        ('NEW', 'New'),
+        ('IN_PROGRESS', 'In Progress'),
+        ('FULFILLED', 'Fulfilled'),
+        ('CLOSED', 'Closed'),
+    ]
+    
+    user_name = models.CharField(max_length=100)
+    resource_type = models.CharField(max_length=20, choices=RESOURCE_TYPES)
+    topic = models.ForeignKey(Topic, on_delete=models.CASCADE, related_name='resource_requests')
+    content = models.TextField()
+    request_date = models.DateField(auto_now_add=True)
+    location = models.ForeignKey(Location, on_delete=models.SET_NULL, null=True, blank=True, related_name='resource_requests')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='NEW')
+    contact_info = models.CharField(max_length=100, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
     def __str__(self):
-        return self.user_name
-
-class Oxygen(models.Model):
-    user_name = models.CharField(max_length=50) # social media user
-    topic_name = models.ForeignKey(Topic,on_delete=models.CASCADE)
-    social_media_content = models.CharField(max_length=1024) # content of data
-    request_date = models.DateField() #date created
-    user_location = models.CharField(max_length=50,default=' ') # social media user
-    status = models.CharField(max_length=10,default='New') # status , NEW , OLD , COMPLETE 
-
-    def __str__(self):
-        return self.user_name
-
-class Bed(models.Model):
-    user_name = models.CharField(max_length=50) # social media user
-    topic_name = models.ForeignKey(Topic,on_delete=models.CASCADE)
-    social_media_content = models.CharField(max_length=1024) # content of data
-    request_date = models.DateField() #date created
-    user_location = models.CharField(max_length=50,default=' ') # social media user
-    status = models.CharField(max_length=10,default='New') # status , NEW , OLD , COMPLETE 
-
-
-    def __str__(self):
-        return self.user_name
+        return f"{self.get_resource_type_display()} request by {self.user_name} ({self.get_status_display()})"
 
 
 

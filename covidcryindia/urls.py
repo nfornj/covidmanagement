@@ -14,16 +14,17 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
-from django.conf.urls import url
-from covidfeed import views
-from vaccination import views
-from django.conf.urls import include 
+from django.urls import path, include
+from django.views.generic import RedirectView
 
 urlpatterns = [
-    url(r'^$',views.index,name='index'),
-    path('covidfeed/',include('covidfeed.urls')),
-    path('vaccination/',include('vaccination.urls')),
+    # Redirect root URL to covidfeed app
+    path('', RedirectView.as_view(pattern_name='covidfeed:index'), name='home'),
+    
+    # Include app URLs
+    path('covidfeed/', include('covidfeed.urls')),
+    path('vaccination/', include('vaccination.urls')),
+    
+    # Admin site
     path('admin/', admin.site.urls),
-  
 ]
